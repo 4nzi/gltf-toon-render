@@ -2,8 +2,12 @@ module.exports = {
     mode: "development",
     entry: "./src/index.js",
     output: {
-        path: `${__dirname}/dist`,
-        filename: "gltf-toon-render.js",
+        library: {
+            name: 'GLTFToonRender',
+            export: 'default',
+            type: 'umd',
+        },
+        filename: "gltf-toon-render.js"
     },
     devServer: {
         static: "./dist",
@@ -11,7 +15,7 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.(js|ts)?$/,
+                test: /\.js$/,
             },
             {
                 test: /.(vert|frag|glsl)$/,
