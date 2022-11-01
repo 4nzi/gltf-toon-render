@@ -62,28 +62,10 @@ export const glUtils = (webglContext) => {
         return vao
     }
 
-    const create_texture = (source) => {
-        var img = new Image()
-
-        img.onload = function () {
-            const tex = gl.createTexture()
-
-            gl.bindTexture(gl.TEXTURE_2D, tex)
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
-            gl.generateMipmap(gl.TEXTURE_2D)
-            gl.bindTexture(gl.TEXTURE_2D, null)
-
-            texture = tex
-        }
-
-        img.src = source
-    }
-
     return {
         create_vertexShader,
         create_fragmentShader,
         create_program,
-        create_vao,
-        create_texture
+        create_vao
     }
 }
