@@ -1,7 +1,7 @@
 export const glUtils = (webglContext) => {
     const gl = webglContext
 
-    const create_vertexShader = (raw) => {
+    const createVertexShader = (raw) => {
         const shader = gl.createShader(gl.VERTEX_SHADER)
         gl.shaderSource(shader, raw)
         gl.compileShader(shader)
@@ -13,7 +13,7 @@ export const glUtils = (webglContext) => {
         }
     }
 
-    const create_fragmentShader = (raw) => {
+    const createFragmentShader = (raw) => {
         const shader = gl.createShader(gl.FRAGMENT_SHADER)
         gl.shaderSource(shader, raw)
         gl.compileShader(shader)
@@ -25,7 +25,7 @@ export const glUtils = (webglContext) => {
         }
     }
 
-    const create_program = (vs, fs) => {
+    const createProgram = (vs, fs) => {
         const program = gl.createProgram()
 
         gl.attachShader(program, vs)
@@ -42,7 +42,7 @@ export const glUtils = (webglContext) => {
         }
     }
 
-    function create_vao(vboDataArray, attL, attS, iboData) {
+    function createVAO(vboDataArray, attL, attS, iboData) {
         let vao, vbo, ibo, i
         vao = gl.createVertexArray()
         gl.bindVertexArray(vao)
@@ -63,9 +63,9 @@ export const glUtils = (webglContext) => {
     }
 
     return {
-        create_vertexShader,
-        create_fragmentShader,
-        create_program,
-        create_vao
+        createVertexShader,
+        createFragmentShader,
+        createProgram,
+        createVAO
     }
 }

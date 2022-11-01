@@ -31,10 +31,10 @@ export default class GLTFToonRender {
             this.meshes = parseGLB(reader.result)
             const gl = this.canvas.getContext('webgl2')
             const {
-                create_vertexShader,
-                create_fragmentShader,
-                create_program,
-                create_vao,
+                createVertexShader,
+                createFragmentShader,
+                createProgram,
+                createVAO
             } = glUtils(gl)
 
             // setting
@@ -43,9 +43,9 @@ export default class GLTFToonRender {
             gl.enable(gl.CULL_FACE)
 
             // shader
-            const v_shader = create_vertexShader(vertexShader)
-            const f_shader = create_fragmentShader(fragmentShader)
-            const prg = create_program(v_shader, f_shader)
+            const v_shader = createVertexShader(vertexShader)
+            const f_shader = createFragmentShader(fragmentShader)
+            const prg = createProgram(v_shader, f_shader)
 
             // attribute
             let attLocation = []
@@ -59,7 +59,7 @@ export default class GLTFToonRender {
             attStride[2] = 2
 
             for (let i in this.meshes) {
-                this.VAOs.push(create_vao(
+                this.VAOs.push(createVAO(
                     [this.meshes[i].pos, this.meshes[i].nor, this.meshes[i].uv],
                     attLocation,
                     attStride,
