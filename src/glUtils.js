@@ -31,44 +31,35 @@ export const glUtils = (webglContext) => {
         gl.attachShader(program, vs)
         gl.attachShader(program, fs)
 
-        gl.linkProgram(program);
+        gl.linkProgram(program)
 
         if (gl.getProgramParameter(program, gl.LINK_STATUS)) {
             gl.useProgram(program)
 
-            return program;
+            return program
         } else {
             alert(gl.getProgramInfoLog(program))
         }
     }
 
-    const create_vbo = (data) => {
-        const vbo = gl.createBuffer()
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW)
-        gl.bindBuffer(gl.ARRAY_BUFFER, null)
-
-        return vbo;
-    }
-
-    const set_attribute = (vbo, attL, attS) => {
-
-        for (var i in vbo) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, vbo[i])
+    function create_vao(vboDataArray, attL, attS, iboData) {
+        let vao, vbo, ibo, i
+        vao = gl.createVertexArray()
+        gl.bindVertexArray(vao)
+        for (i in vboDataArray) {
+            vbo = gl.createBuffer()
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vboDataArray[i]), gl.STATIC_DRAW)
             gl.enableVertexAttribArray(attL[i])
             gl.vertexAttribPointer(attL[i], attS[i], gl.FLOAT, false, 0, 0)
         }
-    }
-
-    const create_ibo = (data) => {
-        const ibo = gl.createBuffer()
-
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo)
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(data), gl.STATIC_DRAW)
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null)
-
-        return ibo
+        if (iboData) {
+            ibo = gl.createBuffer()
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo)
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(iboData), gl.STATIC_DRAW)
+        }
+        gl.bindVertexArray(null)
+        return vao
     }
 
     const create_texture = (source) => {
@@ -92,9 +83,7 @@ export const glUtils = (webglContext) => {
         create_vertexShader,
         create_fragmentShader,
         create_program,
-        create_vbo,
-        set_attribute,
-        create_ibo,
+        create_vao,
         create_texture
     }
 }
