@@ -9,8 +9,13 @@ export default class GLTFToonRender {
         this.canvas = canvas
         this.meshes = []
         this.VAOs = []
+        this.textures = []
         this.lightDirection = [-0.5, 0.5, 0.5]
-        this.rotate = 0
+        this.qt = (function () {
+            const q = new qtnIV()
+            let qt = q.identity(q.create())
+            return qt
+        })()
     }
 
     setSize = (width, height) => {
@@ -22,9 +27,30 @@ export default class GLTFToonRender {
         this.lightDirection = lightDirection
     }
 
+    mouseMove = (e) => {
+        const q = new qtnIV
+        const cw = this.canvas.width
+        const ch = this.canvas.width
+        const wh = 1 / Math.sqrt(cw * cw + ch * ch);
+        let x = e.clientX - this.canvas.offsetLeft - cw * 0.5
+        let y = e.clientY - this.canvas.offsetTop - ch * 0.5
+        let sq = Math.sqrt(x * x + y * y)
+        const r = sq * 2.0 * Math.PI * wh
+
+        if (sq != 1) {
+            sq = 1 / sq
+            x *= sq
+            y *= sq
+        }
+        q.rotate(r, [y, x, 0.0], this.qt)
+    }
+
+
     loadGLB = async (url) => {
         const reader = new FileReader()
         const res = await (await fetch(url)).blob()
+
+        this.canvas.addEventListener('mousemove', this.mouseMove, true)
 
         reader.readAsArrayBuffer(res)
         reader.onload = async () => {
@@ -76,22 +102,21 @@ export default class GLTFToonRender {
 
             // matrix
             const m = new matIV()
+            const q = new qtnIV()
+
             let mMatrix = m.identity(m.create())
             let vMatrix = m.identity(m.create())
             let pMatrix = m.identity(m.create())
-            let vpMatrix = m.identity(m.create())
+            let pvMatrix = m.identity(m.create())
             let mvpMatrix = m.identity(m.create())
             let invMatrix = m.identity(m.create())
 
-            m.lookAt([0.0, 0.0, 3.0], [0, 0, 0], [0, 1, 0], vMatrix)
-            m.perspective(90, this.canvas.width / this.canvas.height, 0.1, 100, pMatrix)
-            m.multiply(pMatrix, vMatrix, vpMatrix)
-            m.translate(mMatrix, [0.0, 0.0, 0.0], mMatrix)
-            m.multiply(vpMatrix, mMatrix, mvpMatrix)
+            // ビュー×プロジェクション座標変換行列
+            m.lookAt([0.0, 0.0, 10.0], [0, 0, 0], [0.0, 1.0, 0.0], vMatrix)
+            m.perspective(45, this.canvas.width / this.canvas.height, 0.1, 100, pMatrix)
+            m.multiply(pMatrix, vMatrix, pvMatrix)
 
             // texture
-            let textures = []
-
             gl.activeTexture(gl.TEXTURE0)
             for (let i in this.meshes) {
                 let img = new Image()
@@ -104,7 +129,7 @@ export default class GLTFToonRender {
                     gl.generateMipmap(gl.TEXTURE_2D)
                     gl.bindTexture(gl.TEXTURE_2D, null)
 
-                    textures.push(tex)
+                    this.textures.push(tex)
                 }
                 img.src = this.meshes[i].tex
             }
@@ -115,6 +140,14 @@ export default class GLTFToonRender {
                 gl.clearDepth(1.0)
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+                //matrix
+                var qMatrix = m.identity(m.create())
+                q.toMatIV(this.qt, qMatrix)
+
+                m.identity(mMatrix)
+                m.multiply(mMatrix, qMatrix, mMatrix)
+                m.multiply(pvMatrix, mMatrix, mvpMatrix)
+
                 // register uniform
                 gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix)
                 gl.uniformMatrix4fv(uniLocation[1], false, invMatrix)
@@ -123,7 +156,7 @@ export default class GLTFToonRender {
 
                 // bind and draw
                 for (let i in this.meshes) {
-                    gl.bindTexture(gl.TEXTURE_2D, textures[i])
+                    gl.bindTexture(gl.TEXTURE_2D, this.textures[i])
                     gl.bindVertexArray(this.VAOs[i])
 
                     gl.drawElements(gl.TRIANGLES, this.meshes[i].inx.length, gl.UNSIGNED_SHORT, 0)
