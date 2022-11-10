@@ -1,9 +1,10 @@
 export const glUtils = (webglContext) => {
     const gl = webglContext
 
-    const createVertexShader = (raw) => {
+    const createVertexShader = (source) => {
         const shader = gl.createShader(gl.VERTEX_SHADER)
-        gl.shaderSource(shader, raw)
+
+        gl.shaderSource(shader, source)
         gl.compileShader(shader)
 
         if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
@@ -13,9 +14,10 @@ export const glUtils = (webglContext) => {
         }
     }
 
-    const createFragmentShader = (raw) => {
+    const createFragmentShader = (source) => {
         const shader = gl.createShader(gl.FRAGMENT_SHADER)
-        gl.shaderSource(shader, raw)
+
+        gl.shaderSource(shader, source)
         gl.compileShader(shader)
 
         if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
@@ -30,7 +32,6 @@ export const glUtils = (webglContext) => {
 
         gl.attachShader(program, vs)
         gl.attachShader(program, fs)
-
         gl.linkProgram(program)
 
         if (gl.getProgramParameter(program, gl.LINK_STATUS)) {
@@ -42,22 +43,26 @@ export const glUtils = (webglContext) => {
         }
     }
 
-    function createVAO(vboDataArray, attL, attS, iboData) {
+    const createVAO = (vboDataArray, attL, attS, iboData) => {
         let vao, vbo, ibo, i
         vao = gl.createVertexArray()
+
         gl.bindVertexArray(vao)
         for (i in vboDataArray) {
             vbo = gl.createBuffer()
+
             gl.bindBuffer(gl.ARRAY_BUFFER, vbo)
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vboDataArray[i]), gl.STATIC_DRAW)
             gl.enableVertexAttribArray(attL[i])
             gl.vertexAttribPointer(attL[i], attS[i], gl.FLOAT, false, 0, 0)
         }
+
         if (iboData) {
             ibo = gl.createBuffer()
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo)
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(iboData), gl.STATIC_DRAW)
         }
+
         gl.bindVertexArray(null)
         return vao
     }
