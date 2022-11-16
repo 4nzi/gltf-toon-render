@@ -65,8 +65,8 @@ const getPosition = (jsonData, buffer, offset, meshIndex) => {
     const accessors = jsonData.json.accessors[index]
 
     const view = jsonData.json.bufferViews[Number(accessors.bufferView)]
-    let position = []
 
+    let position = []
     const vtx = new DataView(buffer, offset + GLB_CHUNK_HEADER_SIZE + view.byteOffset, view.byteLength)
     for (let i = 0; i < view.byteLength; i += 4) {
         position.push(vtx.getFloat32(i, LE))
@@ -128,32 +128,6 @@ const getTexCoord = (jsonData, buffer, offset, meshIndex) => {
     return uv
 }
 
-const getTexture = (jsonData, buffer, offset, meshIndex) => {
-    let index = -1
-
-    if (jsonData.json.images) {
-        index = jsonData.json.images[meshIndex].bufferView
-    }
-
-    if (index === -1) {
-        console.warn("Texture field was not found.")
-        return ""
-    }
-
-    const view = jsonData.json.bufferViews[index]
-
-    const imgBuf = new Uint8Array(
-        buffer,
-        offset + GLB_CHUNK_HEADER_SIZE + view.byteOffset,
-        view.byteLength
-    )
-
-    const img = new Image()
-    img.src = URL.createObjectURL(new Blob([imgBuf]))
-
-    return img.src
-}
-
 const getBoneIndices = (jsonData, buffer, offset, meshIndex) => {
     if (!jsonData.json.meshes[meshIndex].primitives[0].attributes.JOINTS_0) {
         return []
@@ -192,7 +166,39 @@ const getWeights = (jsonData, buffer, offset, meshIndex) => {
     return weights
 }
 
+const getTexture = (jsonData, buffer, offset, meshIndex) => {
+    let index = -1
+
+    if (jsonData.json.images) {
+        index = jsonData.json.images[meshIndex].bufferView
+    }
+
+    if (index === -1) {
+        console.warn("Texture field was not found.")
+        return ""
+    }
+
+    const view = jsonData.json.bufferViews[index]
+
+    const imgBuf = new Uint8Array(
+        buffer,
+        offset + GLB_CHUNK_HEADER_SIZE + view.byteOffset,
+        view.byteLength
+    )
+
+    const img = new Image()
+    img.src = URL.createObjectURL(new Blob([imgBuf]))
+
+    return img.src
+}
+
 const getSkins = (jsonData, buffer, offset, meshIndex) => {
+    if (!jsonData.json.skins) {
+        return null
+    } else if (!jsonData.json.skins[meshIndex].joints) {
+        return null
+    }
+
     let invMatrix = [], bones = []
 
     const skin = jsonData.json.skins[meshIndex]
@@ -200,7 +206,6 @@ const getSkins = (jsonData, buffer, offset, meshIndex) => {
     const accessors = jsonData.json.accessors[index]
     const view = jsonData.json.bufferViews[Number(accessors.bufferView)]
     const vtx = new DataView(buffer, offset + GLB_CHUNK_HEADER_SIZE + view.byteOffset, view.byteLength)
-
 
     // get invMatrix from buffer
     for (let i = 0; i < view.byteLength; i += 4) {
@@ -225,7 +230,7 @@ const getSkins = (jsonData, buffer, offset, meshIndex) => {
     return bones
 }
 
-export const parseGLB = (raw) => {
+const parseGLB = (raw) => {
     const ds = new DataView(raw)
     const glbMeta = getGLBMeta(ds)
     let meshes = []
@@ -246,6 +251,7 @@ export const parseGLB = (raw) => {
 
     for (let i in jsonData.json.meshes) {
         meshes.push({
+            id: i,
             attributes: {
                 pos: getPosition(jsonData, ds.buffer, offset, i),
                 inx: getIndices(jsonData, ds.buffer, offset, i),
@@ -264,3 +270,5 @@ export const parseGLB = (raw) => {
     console.log(meshes)
     return meshes
 }
+
+export default parseGLB
