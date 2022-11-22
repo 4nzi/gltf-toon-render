@@ -1,18 +1,19 @@
 import parseGLB from "./utils/parseGLB"
-import glUtils from "./utils/glUtils"
 import Model from "./Model"
-import TestShader from "./Shader.js"
-import { matIV, qtnIV } from "./utils/minMatrix.js"
+import { Camera, CameraController } from "./Camera"
+import ToonShader from "./Shader"
 import vToon from "./shaders/toon/vertexShader.glsl"
 import fToon from "./shaders/toon/fragmentShader.glsl"
+import vNormal from "./shaders/normal/vertexShader.glsl"
+import fNormal from "./shaders/normal/fragmentShader.glsl"
 
 export default class GLTFToonRender {
     constructor(canvas) {
         this.canvas = canvas
         this.models = []
-        this.textures = []
         this.shaders = []
-        this.lightDirection = [-0.5, 0.5, 0.5]
+        this.lightDirection = [0.5, 0.5, -0.1]
+        this.isActive = true
     }
 
     setSize(width, height) {
@@ -20,73 +21,77 @@ export default class GLTFToonRender {
         this.canvas.height = height
     }
 
-    setLight(lightDirection) {
-        this.lightDirection = lightDirection
-    }
+    setLight(lightDirection) { this.lightDirection = lightDirection }
 
-    getModel(gl, loadedGLB) {
-        const meshes = parseGLB(loadedGLB)
+    start() { this.isActive = true }
 
-        meshes.forEach(mesh => {
-            const vao = glUtils(gl).createVAO(mesh.attributes.pos,
-                mesh.attributes.nor, mesh.attributes.uv, mesh.attributes.inx
-            )
+    stop() { this.isActive = false }
 
-            this.models.push(new Model(mesh.attributes, vao))
-        })
-    }
-
-    async loadGLB(url) {
+    async loadGLB(src) {
         const reader = new FileReader()
-        const res = await (await fetch(url)).blob()
+        const res = await (await fetch(src)).blob()
 
         reader.readAsArrayBuffer(res)
         reader.onload = async () => {
             const gl = this.canvas.getContext('webgl2')
+            const meshes = parseGLB(reader.result)
 
-            //get model and shader
-            this.getModel(gl, reader.result)
-            const testShader = new TestShader(gl, vToon, fToon)
+            // setup model x camera x shader
+            for (let i in meshes) {
+                const model = new Model(meshes[i].attributes, gl)
+                await model.loadTexture(meshes[i].textures)
+
+                this.models.push(model)
+            }
+
+            const camera = new Camera(gl)
+            const CameraCtrl = new CameraController(gl, camera)
+            camera.transform.position = [0.0, 0.0, 9.0]
+
+            const toonShader = new ToonShader(gl, vToon, fToon)
+            toonShader.activate().setPmatrix(camera.pMatrix).deactivate()
+
+            const normalShader = new ToonShader(gl, vNormal, fNormal)
+            normalShader.activate().setPmatrix(camera.pMatrix).deactivate()
 
             // setting
             gl.enable(gl.DEPTH_TEST)
             gl.depthFunc(gl.LEQUAL)
             gl.enable(gl.CULL_FACE)
 
-            // matrix
-            const m = new matIV()
-            const q = new qtnIV()
-
-            let mMatrix = m.identity(m.create())
-            let vMatrix = m.identity(m.create())
-            let pMatrix = m.identity(m.create())
-            let pvMatrix = m.identity(m.create())
-            let mvpMatrix = m.identity(m.create())
-            let invMatrix = m.identity(m.create())
-
-            // model x view × projection 
-            m.lookAt([0.0, 0.0, 10.0], [0, 0, 0], [0.0, 1.0, 0.0], vMatrix)
-            m.perspective(45, this.canvas.width / this.canvas.height, 0.1, 100, pMatrix)
-            m.multiply(pMatrix, vMatrix, pvMatrix)
-            m.multiply(pvMatrix, mMatrix, mvpMatrix)
-
+            // render
             const render = () => {
+                camera.updateViewMatrix()
+
                 // clear
                 gl.clearColor(0.3, 0.3, 0.3, 1.0)
                 gl.clearDepth(1.0)
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-                // bind and draw
+                // draw models
                 this.models.forEach(model => {
-                    testShader.activate()
-                        .set(mvpMatrix, invMatrix, this.lightDirection).renderModel(model)
+                    if (model.texture.normal) {
+                        normalShader.activate().setAlbedoTexture(model.texture.albedo).setNormalTexture(model.texture.normal).preRender()
+                            .setVmatrix(camera.vMatrix)
+                            .setLightDirection(this.lightDirection)
+                            .renderModel(model.setScale(1.5, 1.5, 1.5).preRender())
+
+                    } else {
+                        toonShader.activate().setAlbedoTexture(model.texture.albedo).preRender()
+                            .setVmatrix(camera.vMatrix)
+                            .setLightDirection(this.lightDirection)
+                            .renderModel(model)
+                    }
                 })
-
                 gl.flush()
-                requestAnimationFrame(render)
-            }
 
+                if (this.isActive) requestAnimationFrame(render)
+            }
             render()
+            console.log("---------shader--------")
+            console.log(normalShader)
+            console.log(this.models)
+            console.log(camera)
         }
     }
 }
