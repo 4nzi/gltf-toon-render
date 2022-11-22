@@ -14,6 +14,7 @@ void main(void){
        
     }else{
         vec4 smpColor = texture(albedoTex, vUv);
+        vec4 smpColor2 = texture(normalTex, vUv);
         vec4 sdwColor = vec4(0.3, 0.3, 0.3, 1.0);
 
         outColor = smpColor * (1.0 - vFactor) + sdwColor * smpColor * vFactor;
