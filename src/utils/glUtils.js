@@ -7,9 +7,9 @@ const ATTR_NORMAL_STR = 3
 const ATTR_UV_NAME = "uv"
 const ATTR_UV_LOC = 2
 const ATTR_UV_STR = 2
-const ATTR_WEIGHT_NAME = "weights"
-const ATTR_WEIGHT_LOC = 3
-const ATTR_WEIGHT_STR = 4
+const ATTR_WEIGHTS_NAME = "weights"
+const ATTR_WEIGHTS_LOC = 3
+const ATTR_WEIGHTS_STR = 4
 const ATTR_BONEIDX_NAME = "boneIdx"
 const ATTR_BONEIDX_LOC = 4
 const ATTR_BONEIDX_STR = 4
@@ -123,23 +123,30 @@ const glUtils = (webglContext) => {
 
     const getStandardUniLocations = (program) => {
         return {
-            mvpMatrix: gl.getUniformLocation(program, "mvpMatrix"),
+            mMatrix: gl.getUniformLocation(program, "mMatrix"),
+            vMatrix: gl.getUniformLocation(program, "vMatrix"),
+            pMatrix: gl.getUniformLocation(program, "pMatrix"),
             invMatrix: gl.getUniformLocation(program, "invMatrix"),
             lightDirection: gl.getUniformLocation(program, "lightDirection"),
         }
     }
 
-    const loadTexture = (img) => {
-        const tex = this.createTexture()
+    const loadTexture = async (src) => {
+        const img = new Image()
 
-        this.bindTexture(this.TEXTURE_2D, tex);
-        this.texImage2D(this.TEXTURE_2D, 0, this.RGBA, this.RGBA, this.UNSIGNED_BYTE, img)
+        img.src = src
+        await img.decode()
 
-        this.texParameteri(this.TEXTURE_2D, this.TEXTURE_MAG_FILTER, this.LINEAR);					//Setup up scaling
-        this.texParameteri(this.TEXTURE_2D, this.TEXTURE_MIN_FILTER, this.LINEAR_MIPMAP_NEAREST);	//Setup down scaling
-        this.generateMipmap(this.TEXTURE_2D);	//Precalc different sizes of texture for better quality rendering.
+        let tex = gl.createTexture()
+        gl.bindTexture(gl.TEXTURE_2D, tex)
 
-        this.bindTexture(this.TEXTURE_2D, null)
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST)
+        gl.generateMipmap(gl.TEXTURE_2D)
+
+        gl.bindTexture(gl.TEXTURE_2D, null)
+
         return tex
     }
 
